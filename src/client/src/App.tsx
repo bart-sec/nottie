@@ -17,13 +17,63 @@ function App() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [reload, setReload] = useState(false);
+
+  const deleteTodo = async (id: number) => {
+    const response = await fetch("http://localhost:5241/todos/" + id, {
+      method: "DELETE"
+    });
+    if (response.ok) {
+      console.log("Todo removed");
+
+      setReload(true);
+    }
+  }
+
+
+  const update = async (id: number, isCompleted: boolean) => {
+    const response = await fetch("http://localhost:5241/todos/" + id,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          "isCompleted": isCompleted
+        })
+      });
+    if (response.ok) {
+      console.log("todo updated!");
+      setReload(true);
+    }
+  }
+  const submit = async () => {
+
+    const response = await fetch("http://localhost:5241/todos", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        "name": "new todo item",
+        "isCompleted": false
+      }),
+    });
+    if (response.ok) {
+      console.log("Todo created!");
+      setReload(true);
+    }
+
+  }
 
   useEffect(() => {
-    fetch("http://localhost:5241/weatherforecast")
+    fetch("http://localhost:5241/todos")
       .then((response) => {
         if (!response.ok) {
           throw new Error('Error response not ok');
         }
+
+        setReload(false);
 
         return response.json();
       })
@@ -32,13 +82,15 @@ function App() {
         console.log(data);
         setData(data);
         setLoading(false);
+        setReload(false);
       })
       .catch(error => {
         console.log("setting error");
         setError(error);
         setLoading(false);
+        setReload(false);
       })
-  }, [])
+  }, [reload])
 
 
   return (
@@ -62,14 +114,20 @@ function App() {
         >
           Count is {count}
         </button>
-
+        <button type='button' onClick={submit}>button</button>
 
         {error && <div>{error.data}</div>}
 
         {loading ? "is loading" :
 
           <ul>
-            {data.map((entry, index) => <li key={index}><p>date: {entry.date}</p><p>temperature: {entry.temperatureC}</p></li>)}
+            {data.map(entry =>
+              <li key={entry.id}>
+                <p>id: {entry.id}</p>
+                <p>name: {entry.name}</p>
+                <p>is completed: <input type='checkbox' value={entry.isCompleted} onChange={() => update(entry.id, !entry.isCompleted)} /> {entry.isCompleted}</p>
+                <p><button type='button' onClick={() => deleteTodo(entry.id)}>delete</button></p>
+              </li>)}
           </ul>}
 
       </section>
